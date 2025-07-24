@@ -19,7 +19,7 @@ A FastAPI-based REST API that generates detailed job descriptions using AI (Olla
 Use Python's venv to create a virtual environment for managing dependencies.
 
 ```bash
-# Create the venv using python first
+# Install venv using python first
 python -m venv venv
 
 # Activate your virtual environment
