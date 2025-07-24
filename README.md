@@ -14,9 +14,14 @@ A FastAPI-based REST API that generates detailed job descriptions using AI (Olla
 
 ## Setup
 
-### 1. Install Dependencies
+### 1. Creating a Virtual Environment and Install Dependencies
+
+Use Python's venv to create a virtual environment for managing dependencies.
 
 ```bash
+# Create the venv using python first
+python -m venv venv
+
 # Activate your virtual environment
 .\venv\Scripts\Activate.ps1
 
@@ -24,26 +29,59 @@ A FastAPI-based REST API that generates detailed job descriptions using AI (Olla
 pip install -r requirements.txt
 ```
 
-### 2. Ensure Ollama is Running
+### 2. Creating a Docker Image for Ollama
 
-Make sure you have Ollama installed and the `llama3:latest` model is available:
+Follow the steps mentioned here: https://hub.docker.com/r/ollama/ollama to create an image and run a LLM of your choosing.
 
 ```bash
-# Check if Ollama is running
-ollama list
+# Pull and run Ollama Docker container
+docker run -d -v ollama:/root/.ollama -p 11434:11434 --name ollama ollama/ollama
 
-# If llama3 is not available, pull it
-ollama pull llama3:latest
+# Pull the llama3 model
+docker exec -it ollama ollama pull llama3:latest
 ```
 
-### 3. Start the API Server
+### 3. Ensure Ollama is Running
+
+Make sure you have Ollama running in Docker and are running the `llama3:latest` model or model of your choice:
+
+```bash
+# Check if container is running
+docker ps
+
+# Check if Ollama is running
+curl http://localhost:11434/api/tags
+
+# If llama3 is not available, pull it
+docker exec -it ollama ollama pull llama3:latest
+```
+
+### 4. Connecting Ollama to the API
+
+You can connect Ollama to the API through `app.py`. In the `__init__` method, specify the model name and `base_url` of your Ollama instance. By default, the Ollama port is 11434.
+
+```python
+# Example configuration in app.py
+generator = DescriptionGenerator(
+    model_name="llama3:latest",
+    base_url="http://localhost:11434"  # Default Docker Ollama URL
+)
+
+# For custom ports
+generator = DescriptionGenerator(
+    model_name="llama3:latest",
+    base_url="http://localhost:8080"  # If you mapped to a different port
+)
+```
+
+### 5. Start the API Server
 
 ```bash
 # Start the development server
-uvicorn api:app --reload
-
-# Or run directly
 python api.py
+
+# Alternative: using uvicorn directly
+uvicorn api:app --reload
 ```
 
 The API will be available at: `http://localhost:8000`
@@ -243,6 +281,36 @@ Job Description Generator/
 - **pydantic**: Data validation and parsing
 - **langchain**: AI/LLM framework
 - **langchain_community**: Community LangChain components
+- **requests**: HTTP library for testing
+
+## Docker Setup (Alternative)
+
+If you prefer to run everything in Docker, you can create a `docker-compose.yml`:
+
+```yaml
+version: "3.8"
+
+services:
+  ollama:
+    image: ollama/ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama:/root/.ollama
+    container_name: ollama
+
+  job-generator-api:
+    build: .
+    ports:
+      - "8000:8000"
+    depends_on:
+      - ollama
+    environment:
+      - OLLAMA_BASE_URL=http://ollama:11434
+
+volumes:
+  ollama:
+```
 
 ## Troubleshooting
 
@@ -254,14 +322,22 @@ Job Description Generator/
 
 2. **"Connection refused" when testing**
 
-   - Solution: Make sure the API server is running with `uvicorn api:app --reload`
+   - Solution: Make sure the API server is running with `python api.py`
 
 3. **"Generator initialization failed"**
 
-   - Solution: Ensure Ollama is running and `llama3:latest` model is available
+   - Solution: Ensure Ollama Docker container is running and `llama3:latest` model is available
+   - Check with: `docker ps` and `curl http://localhost:11434/api/tags`
 
 4. **"JSON parsing failed" errors**
+
    - Solution: Check that the LLM model is working properly by testing `app.py` directly
+
+5. **Docker Ollama connection issues**
+   - Ensure Docker container is running: `docker ps`
+   - Verify port mapping: Default is `11434:11434`
+   - Test API: `curl http://localhost:11434/api/tags`
+   - Check model availability: `docker exec -it ollama ollama list`
 
 ### Debug Mode
 
