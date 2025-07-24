@@ -17,6 +17,9 @@ A FastAPI-based REST API that generates detailed job descriptions using AI (Olla
 ### 1. Install Dependencies
 
 ```bash
+# Install venv using python first
+python -m venv venv
+
 # Activate your virtual environment
 .\venv\Scripts\Activate.ps1
 
